@@ -31,10 +31,30 @@ public final class PortManagerViewModel: ObservableObject {
     // Kill options
     @Published public var killTreeByDefault: Bool = true
     
+    // Recent ports
+    @Published public var recentPorts: [Int] = []
+    private let recentPortsKey = "recentPorts_v1"
+    
     private var toastTimer: Task<Void, Never>? = nil
     private let service = PortScannerService.shared
     
-    public init() {}
+    public init() {
+        loadRecentPorts()
+    }
+    
+    public func loadRecentPorts() {
+        recentPorts = UserDefaults.standard.array(forKey: recentPortsKey) as? [Int] ?? []
+    }
+    
+    public func addRecentPort(_ port: Int) {
+        var list = recentPorts.filter { $0 != port }
+        list.insert(port, at: 0)
+        if list.count > 6 {
+            list = Array(list.prefix(6))
+        }
+        recentPorts = list
+        UserDefaults.standard.set(list, forKey: recentPortsKey)
+    }
     
     // Quick port presets
     public let presetPorts = [3000, 5173, 8000, 8080, 5432, 27017, 3306, 6379]
@@ -58,6 +78,7 @@ public final class PortManagerViewModel: ObservableObject {
     
     public func inspectPort(_ port: Int) {
         inspectedPort = port
+        addRecentPort(port)
         isLoading = true
         
         Task {
@@ -79,6 +100,8 @@ public final class PortManagerViewModel: ObservableObject {
         
         switch res {
         case .success:
+            NSSound(named: "Pop")?.play()
+            NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
             showToast("Killed \(process.name) (PID: \(targetPid))", type: .success)
         case .failure(let error):
             showToast("Error killing PID \(targetPid): \(error.localizedDescription)", type: .error)
@@ -100,6 +123,8 @@ public final class PortManagerViewModel: ObservableObject {
         let (killed, failed) = service.killAll(pids: pids, includeTrees: killTreeByDefault)
         
         if failed.isEmpty {
+            NSSound(named: "Pop")?.play()
+            NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
             showToast("Terminated all \(killed.count) process(es) on port \(port)!", type: .success)
         } else {
             showToast("Killed \(killed.count) process(es), \(failed.count) failed", type: .error)

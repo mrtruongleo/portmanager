@@ -3,6 +3,7 @@ import subprocess
 from PIL import Image, ImageDraw
 
 def generate():
+    # 1. Generate 1024x1024 AppIcon
     size = 1024
     img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
     
@@ -57,13 +58,64 @@ def generate():
         r2 = img.resize((s * 2, s * 2), Image.Resampling.LANCZOS)
         r2.save(f"{iconset_dir}/icon_{s}x{s}@2x.png")
     
-    out_icns = "PortManager.app/Contents/Resources/AppIcon.icns"
-    os.makedirs(os.path.dirname(out_icns), exist_ok=True)
+    out_resources = "PortManager.app/Contents/Resources"
+    os.makedirs(out_resources, exist_ok=True)
+    out_icns = os.path.join(out_resources, "AppIcon.icns")
     subprocess.run(["iconutil", "-c", "icns", iconset_dir, "-o", out_icns], check=True)
     import shutil
     shutil.rmtree(iconset_dir)
     print("Icon generated:", out_icns)
 
+    # 2. Generate Dedicated Status Bar Icons (44x44 @2x and 22x22 @1x)
+    stat_size = 44
+    stat_img = Image.new('RGBA', (stat_size, stat_size), (0, 0, 0, 0))
+    sdraw = ImageDraw.Draw(stat_img)
+    
+    # Outer squircle with neon cyan border
+    r = 9
+    sdraw.rounded_rectangle([2, 2, stat_size - 3, stat_size - 3], radius=r, fill=(20, 30, 48, 255), outline=(56, 189, 248, 240), width=2)
+    
+    # Inner RJ45 socket cutout
+    sdraw.rounded_rectangle([8, 11, stat_size - 9, 31], radius=3, fill=(10, 16, 28, 255), outline=(96, 165, 250, 160), width=1)
+    
+    # Bottom key notch
+    sdraw.rectangle([14, 26, stat_size - 15, 33], fill=(10, 16, 28, 255))
+    
+    # 6 Gold contact pins
+    pins = 6
+    start_x = 12
+    step = 3.6
+    for i in range(pins):
+        px = int(start_x + i * step)
+        sdraw.line([(px, 13), (px, 19)], fill=(250, 204, 21, 255), width=2)
+        
+    # Active indicator LEDs
+    sdraw.ellipse([5, 5, 9, 9], fill=(34, 197, 94, 255))
+    sdraw.ellipse([stat_size - 10, 5, stat_size - 6, 9], fill=(249, 115, 22, 255))
+    
+    stat_img.save(os.path.join(out_resources, "StatusIcon@2x.png"))
+    stat_img_1x = stat_img.resize((22, 22), Image.Resampling.LANCZOS)
+    stat_img_1x.save(os.path.join(out_resources, "StatusIcon.png"))
+    
+    # Also save template version
+    tmpl = Image.new('RGBA', (stat_size, stat_size), (0, 0, 0, 0))
+    tdraw = ImageDraw.Draw(tmpl)
+    tdraw.rounded_rectangle([4, 6, stat_size - 5, stat_size - 8], radius=6, outline=(255, 255, 255, 255), width=3)
+    tdraw.rectangle([14, stat_size - 10, stat_size - 15, stat_size - 5], fill=(0, 0, 0, 0))
+    tdraw.line([(14, stat_size - 8), (14, stat_size - 5)], fill=(255, 255, 255, 255), width=3)
+    tdraw.line([(stat_size - 15, stat_size - 8), (stat_size - 15, stat_size - 5)], fill=(255, 255, 255, 255), width=3)
+    tdraw.line([(14, stat_size - 5), (stat_size - 15, stat_size - 5)], fill=(255, 255, 255, 255), width=3)
+    for i in range(5):
+        px = int(12 + i * 4.8)
+        tdraw.line([(px, 11), (px, 20)], fill=(255, 255, 255, 255), width=2)
+    tdraw.ellipse([7, 24, 11, 28], fill=(255, 255, 255, 255))
+    tdraw.ellipse([stat_size - 12, 24, stat_size - 8, 28], fill=(255, 255, 255, 255))
+    
+    tmpl.save(os.path.join(out_resources, "StatusIconTemplate@2x.png"))
+    tmpl_1x = tmpl.resize((22, 22), Image.Resampling.LANCZOS)
+    tmpl_1x.save(os.path.join(out_resources, "StatusIconTemplate.png"))
+    
+    print("Status icons generated in:", out_resources)
+
 if __name__ == "__main__":
     generate()
-

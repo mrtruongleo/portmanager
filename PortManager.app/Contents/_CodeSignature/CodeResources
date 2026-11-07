@@ -8,6 +8,22 @@
 		<data>
 		+disDxjKwnjCRvVWWxtExjhxXhM=
 		</data>
+		<key>Resources/StatusIcon.png</key>
+		<data>
+		C9II4ZN75plEoiqqa5ZG3isb1Qs=
+		</data>
+		<key>Resources/StatusIcon@2x.png</key>
+		<data>
+		7OZY9uNMlTA71c4qf70Mxrv8/Q4=
+		</data>
+		<key>Resources/StatusIconTemplate.png</key>
+		<data>
+		YOYSxTI8z/qT59FTSkiIP22KHrM=
+		</data>
+		<key>Resources/StatusIconTemplate@2x.png</key>
+		<data>
+		VtpnMAYgG4F8v32B6kevbfejtGo=
+		</data>
 	</dict>
 	<key>files2</key>
 	<dict>
@@ -16,6 +32,34 @@
 			<key>hash2</key>
 			<data>
 			qQBZwW0BzmP5shb8qvMqILWurLfaiKe50LfxtN8sC90=
+			</data>
+		</dict>
+		<key>Resources/StatusIcon.png</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			5aRS6D2UlQuTII9I/5ivTgk+5gceIOc9m8knndSoz4k=
+			</data>
+		</dict>
+		<key>Resources/StatusIcon@2x.png</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			bXZtRPRF4RS0liPDEfWsxxrnwVK1PmZ0VRf69r4+x1E=
+			</data>
+		</dict>
+		<key>Resources/StatusIconTemplate.png</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			thypNMpmgJ0mHVVWbA6aQYXwe66sq184Vqvey+9+6B8=
+			</data>
+		</dict>
+		<key>Resources/StatusIconTemplate@2x.png</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			KWMbGQ5L5Yye1aKIGP6kRsOvlQSi9nwR+RJwTpgxhP4=
 			</data>
 		</dict>
 	</dict>

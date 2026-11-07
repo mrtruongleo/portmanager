@@ -15,10 +15,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         // Setup Status Bar Item
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem?.button {
-            let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
-            let image = NSImage(systemSymbolName: "network", accessibilityDescription: "Port Manager")?.withSymbolConfiguration(config)
-            image?.isTemplate = true
-            button.image = image
+            button.image = loadStatusIcon()
             button.toolTip = "Port Manager - Click to inspect or kill ports"
             button.target = self
             button.action = #selector(statusBarButtonClicked(_:))
@@ -93,6 +90,48 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem?.menu = nil // clear menu so left-click continues to toggle popover
     }
     
+    private func loadStatusIcon() -> NSImage? {
+        // 1. Try custom StatusIcon from bundle
+        if let iconUrl = Bundle.main.url(forResource: "StatusIcon", withExtension: "png"),
+           let image = NSImage(contentsOf: iconUrl) {
+            image.size = NSSize(width: 18, height: 18)
+            image.isTemplate = false
+            return image
+        }
+        
+        // 2. Try AppIcon.icns from bundle
+        if let appIconUrl = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
+           let image = NSImage(contentsOf: appIconUrl) {
+            image.size = NSSize(width: 18, height: 18)
+            image.isTemplate = false
+            return image
+        }
+        
+        // 3. Try local relative files (fallback)
+        let localPaths = [
+            "PortManager.app/Contents/Resources/StatusIcon.png",
+            "PortManager.app/Contents/Resources/AppIcon.icns"
+        ]
+        for path in localPaths {
+            if FileManager.default.fileExists(atPath: path),
+               let image = NSImage(contentsOfFile: path) {
+                image.size = NSSize(width: 18, height: 18)
+                image.isTemplate = false
+                return image
+            }
+        }
+        
+        // 4. Try NSApp.applicationIconImage
+        if let appIcon = NSApp.applicationIconImage {
+            appIcon.size = NSSize(width: 18, height: 18)
+            return appIcon
+        }
+        
+        // 5. Fallback symbol
+        let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
+        return NSImage(systemSymbolName: "powerplug.fill", accessibilityDescription: "Port Manager")?.withSymbolConfiguration(config)
+    }
+
     @objc private func quitApp() {
         NSApplication.shared.terminate(nil)
     }
