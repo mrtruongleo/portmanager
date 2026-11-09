@@ -8,7 +8,7 @@ public final class PortScannerService: Sendable {
     
     // MARK: - Execute Helper
     @discardableResult
-    public func executeCommand(_ executable: String, arguments: [String]) -> (output: String, error: String, exitCode: Int32) {
+    public func executeCommand(_ executable: String, arguments: [String], timeout: TimeInterval = 6.0) -> (output: String, error: String, exitCode: Int32) {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = arguments
@@ -18,12 +18,47 @@ public final class PortScannerService: Sendable {
         process.standardOutput = outPipe
         process.standardError = errPipe
         
+        var outData = Data()
+        var errData = Data()
+        
+        let group = DispatchGroup()
+        
+        group.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+            outData = outPipe.fileHandleForReading.readDataToEndOfFile()
+            group.leave()
+        }
+        
+        group.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+            errData = errPipe.fileHandleForReading.readDataToEndOfFile()
+            group.leave()
+        }
+        
         do {
             try process.run()
-            process.waitUntilExit()
             
-            let outData = outPipe.fileHandleForReading.readDataToEndOfFile()
-            let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
+            // Watchdog tránh treo vĩnh viễn khi tiến trình kẹt kernel
+            let timeoutSemaphore = DispatchSemaphore(value: 0)
+            DispatchQueue.global().async {
+                process.waitUntilExit()
+                timeoutSemaphore.signal()
+            }
+            
+            let waitResult = timeoutSemaphore.wait(timeout: .now() + timeout)
+            if waitResult == .timedOut {
+                process.terminate()
+                let pid = process.processIdentifier
+                DispatchQueue.global().asyncAfter(deadline: .now() + 0.3) {
+                    if process.isRunning && pid > 0 {
+                        Darwin.kill(pid, SIGKILL)
+                    }
+                }
+                return ("", "Command timed out after \(timeout)s", -1)
+            }
+            
+            // Đợi đọc xong pipe buffer (tránh mất dữ liệu)
+            _ = group.wait(timeout: .now() + 1.0)
             
             let output = String(data: outData, encoding: .utf8) ?? ""
             let error = String(data: errData, encoding: .utf8) ?? ""
@@ -247,6 +282,10 @@ public final class PortScannerService: Sendable {
     public func killProcess(pid: Int, force: Bool = true) -> Result<Void, KillError> {
         let signal = force ? SIGKILL : SIGTERM
         let res = Darwin.kill(pid_t(pid), signal)
+        
+        // Thử reap ngay lập tức không chặn (WNOHANG) phòng khi pid là tiến trình con
+        var status: Int32 = 0
+        _ = Darwin.waitpid(pid_t(pid), &status, WNOHANG)
         
         if res == 0 {
             return .success(())
